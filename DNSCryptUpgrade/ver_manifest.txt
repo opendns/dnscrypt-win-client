@@ -1,1 +1,1 @@
-{ "version" : "0.0.2", "force" : "no", "download" : "\\\\its.office.opendns.com\\EngNFS\\GTT\\DNSCryptUpgrade\\DNSCrypt-Winv0.0.2.msi" }
+{ "version" : "0.0.2", "force" : "no", "download" : "https://raw.github.com/opendns/dnscrypt-win-client/master/DNSCryptUpgrade/DNSCrypt-Winv0.0.2.msi" }
