@@ -1,0 +1,1 @@
+{"upgrade":true,"force":false,"version":"3.2.1","download":"https:\/\/opendns.s3.amazonaws.com\/software\/win\/dynamicipudater\/2.2.1\/OpenDNS-Updater-2.2.1.exe"}

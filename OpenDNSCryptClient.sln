@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Code", "Code\Code.csproj", "{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenDNSInterface", "Interface\OpenDNSInterface.csproj", "{45D484FC-E64C-4712-B43D-3E2A451D4B1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenDNSCryptService", "Service\OpenDNSCryptService.csproj", "{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}"
+EndProject
+Global
+	GlobalSection(TestCaseManagementSettings) = postSolution
+		CategoryFile = OpenDNSCryptClient1.vsmdi
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Debug|x86.ActiveCfg = Debug|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Debug|x86.Build.0 = Debug|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Release|Any CPU.ActiveCfg = Release|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Release|Mixed Platforms.Build.0 = Release|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Release|x86.ActiveCfg = Release|x86
+		{4CD0DAFB-8858-4B46-8AF2-059A5B9C8F2D}.Release|x86.Build.0 = Release|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Debug|x86.ActiveCfg = Debug|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Debug|x86.Build.0 = Debug|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Release|Any CPU.ActiveCfg = Release|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Release|Mixed Platforms.Build.0 = Release|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Release|x86.ActiveCfg = Release|x86
+		{45D484FC-E64C-4712-B43D-3E2A451D4B1B}.Release|x86.Build.0 = Release|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Debug|x86.ActiveCfg = Debug|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Debug|x86.Build.0 = Debug|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Release|Any CPU.ActiveCfg = Release|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Release|Mixed Platforms.Build.0 = Release|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Release|x86.ActiveCfg = Release|x86
+		{C3FB1EE6-FD6B-4B86-ADD5-39045970A6EC}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,8 +1,8 @@
-
 #ignore thumbnails created by windows
 Thumbs.db
 #Ignore files build by Visual Studio
 *.obj
+*.zip
 *.pdb
 *.user
 *.aps
@@ -26,3 +26,7 @@ obj/
 [Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
+
+# ncrunch specific ignores
+*.ncrunchproject
+*.ncrunchsolution
