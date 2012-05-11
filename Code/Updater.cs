@@ -157,8 +157,12 @@ public class Updater
 
             // Not going to bother with progress bars or going async yet...
             m_DownloadPath = Path.Combine(m_DownloadDir, Path.GetFileName(m_DownloadUrl));
-            // TODO: check if file exists already...
-            wcClient.DownloadFile(m_DownloadUrl, m_DownloadPath);
+
+            if (!File.Exists(m_DownloadPath))
+            {
+                wcClient.DownloadFile(m_DownloadUrl, m_DownloadPath);
+            }
+            
             return true;
         }
         catch (WebException ex)
