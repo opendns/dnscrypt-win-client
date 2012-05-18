@@ -929,6 +929,9 @@ public sealed class TimedEventManager
                 DateTime dtTimeStart = DateTime.Now;
                 while (iarResult.IsCompleted == false)
                 {
+                    // Sleep instead of cycling
+                    System.Threading.Thread.Sleep(100);
+
                     // Watchdog, if doesn't return in 5 seconds get out
                     if (dtTimeStart.AddSeconds(5) < DateTime.Now)
                     {
