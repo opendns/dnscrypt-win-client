@@ -58,7 +58,7 @@ namespace OpenDNSCryptService
             if (command == (int)START_MODE.USE_TCP)
             {
                 ProcessManager.KillExistingProcesses(DNSCRYPT_PROC_NAME);
-                Properties.Settings.Default.StartMode = "--tcp-port=443";
+                Properties.Settings.Default.StartMode = "--tcp-only --resolver-port=443";
                 Properties.Settings.Default.Save();
             }
             else if (command == (int)START_MODE.USE_NORMAL)

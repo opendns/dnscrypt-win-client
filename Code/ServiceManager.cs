@@ -65,7 +65,7 @@ class ServiceManager
             string[] sCommands = new string[1];
             sCommands[0] = "";
             if (bIsTCP)
-                sCommands[0] = "--tcp-port=443";
+                sCommands[0] = "--tcp-only --resolver-port=443";
                 
             m_Controller.Start(sCommands);
             m_bIsRunningTcp = bIsTCP;
