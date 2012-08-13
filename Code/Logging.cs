@@ -9,60 +9,53 @@ public class Logging
 {
     public enum LOGTYPE { ERROR = 0, INFO, DEBUG };
 
-    bool m_bFileBased = false;
-    LogRecordSequence m_LogRS = null;
-    FileStream m_LogFS = null;
+    private static readonly log4net.ILog m_ILog = log4net.LogManager.GetLogger("TestLogger");
+    private log4net.Appender.RollingFileAppender m_RFL = null;
 
     static string m_sFileName = "OpenDNS_DNSCrypt_Client";
     static string m_sFileExt = ".log";
 
     static LOGTYPE m_Level = LOGTYPE.ERROR;
-
-    // Set up newline
-    byte[] m_bNewnline = ASCIIEncoding.Default.GetBytes(Environment.NewLine);
-
-    public Logging(string sFileName, string sLocation, bool bFileBased)
+      
+    public Logging(string sFileName, string sLocation, bool bUseLogging)
     {
-        m_bFileBased = bFileBased;
         m_sFileName = sFileName;
+        if (!bUseLogging) return;
 
         if (sLocation.Length > 0)
             if (sLocation[sLocation.Length - 1] != '\\')
                 sLocation += "\\";
 
-        if (m_bFileBased)
-        {
-            m_LogFS = OpenFile(sLocation, m_sFileName, m_sFileExt);
-        }
-        else
-        {
-            string sPath = sLocation + m_sFileName + m_sFileExt;
-            m_LogRS = new LogRecordSequence(sPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
-            m_LogRS.LogStore.Extents.Add("app_extent0", 32 * 1024);
-            m_LogRS.LogStore.Extents.Add("app_extent1");
+        m_RFL = new log4net.Appender.RollingFileAppender();
+        m_RFL.File = sLocation + m_sFileName + m_sFileExt;
+        m_RFL.StaticLogFileName = true;
+        m_RFL.AppendToFile = true;
+        m_RFL.RollingStyle = log4net.Appender.RollingFileAppender.RollingMode.Size;
+        m_RFL.MaximumFileSize = "10mb";
+        m_RFL.MaxSizeRollBackups = 2;
+        m_RFL.Threshold = log4net.Core.Level.All;
 
-            // Set up auto-grow and such
-            m_LogRS.LogStore.Policy.AutoGrow = true;
-            m_LogRS.LogStore.Policy.MaximumExtentCount = 6;
-            m_LogRS.LogStore.Policy.GrowthRate = new PolicyUnit(5, PolicyUnitType.Extents);
-            m_LogRS.LogStore.Policy.Commit();
-            m_LogRS.LogStore.Policy.Refresh();
-        }
+        //m_RFL.CountDirection = 1;
+        //m_RFL.DatePattern = "HH:MM::SS"; 
+        log4net.Layout.PatternLayout layout = new log4net.Layout.PatternLayout("%message%newline");
+        layout.ActivateOptions();
+        log4net.Filter.LevelRangeFilter filter = new log4net.Filter.LevelRangeFilter();
+        filter.LevelMax = log4net.Core.Level.Emergency;
+        filter.LevelMin = log4net.Core.Level.All;
+        m_RFL.AddFilter(filter);
+        m_RFL.Layout = layout;
+        m_RFL.ActivateOptions();
+
+        log4net.Config.BasicConfigurator.Configure(m_RFL);
 
         // Set up
         Log(Logging.LOGTYPE.ERROR, "Start logging...");
+
     }
 
     ~Logging()
     {
-        if (m_bFileBased)
-        {
-            m_LogFS.Close();
-        }
-        else
-        {
-            m_LogRS.Dispose();
-        }
+        if (m_RFL != null) m_RFL.Close();
     }
 
     public void SetLogging(LOGTYPE Level)
@@ -80,10 +73,7 @@ public class Logging
 
         System.Diagnostics.Debug.WriteLine(m_sFileName + ": " + sData);
 
-        if (m_bFileBased)
-            LogToFile(Type, sData);
-        else
-            LogToStore(Type, sData);
+        LogToFile(Type, sData);
     }
 
     // Overload that defaults to Debug Level
@@ -97,41 +87,25 @@ public class Logging
 
         System.Diagnostics.Debug.WriteLine(m_sFileName + ": " + sData);
 
-        if (m_bFileBased)
-            LogToFile(LOGTYPE.DEBUG, sData);
-        else
-            LogToStore(LOGTYPE.DEBUG, sData);
+        LogToFile(LOGTYPE.DEBUG, sData);
     }
 
     #region Log Functions
 
-    // Creates a file with the input params, if not found, creates the file
-    private FileStream OpenFile(string sLocation, string sFileName, string sFileExt)
-    {
-        string sPath = sLocation + sFileName + MakeFileDate() + sFileExt;
-        return new FileStream(sPath, FileMode.Append);
-    }
-
     // File version
     private void LogToFile(LOGTYPE Type, string sData)
     {
-        byte[] bBuf = ASCIIEncoding.Default.GetBytes(sData);
-
-        lock (m_LogFS)
+        switch (Type)
         {
-            m_LogFS.Write(bBuf, 0, bBuf.Length);
-            m_LogFS.Write(m_bNewnline, 0, m_bNewnline.Length);
-            m_LogFS.Flush();
-        }
-    }
-
-    // Event Log version
-    private void LogToStore(LOGTYPE Type, string sData)
-    {
-        lock (m_LogRS)
-        {
-            SequenceNumber Last = SequenceNumber.Invalid;
-            Last = m_LogRS.Append(CreateData(sData), SequenceNumber.Invalid, SequenceNumber.Invalid, RecordAppendOptions.ForceFlush);
+            case LOGTYPE.INFO:
+                m_ILog.Info(sData);
+                break;
+            case LOGTYPE.DEBUG:
+                m_ILog.Debug(sData);
+                break;
+            case LOGTYPE.ERROR:
+                m_ILog.Error(sData);
+                break;
         }
     }
 

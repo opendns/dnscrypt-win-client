@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 public class DNSPacket
 {
@@ -312,6 +310,11 @@ public class DNSPacket
         public byte[] GetRRBytes()
         {
             return this.m_bRData;
+        }
+
+        public bool IsTruncated()
+        {
+            return this.m_bTC;
         }
 
         #endregion

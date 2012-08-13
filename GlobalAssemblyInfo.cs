@@ -36,11 +36,11 @@ using System.Runtime.InteropServices;
 // The maximum number is 65535, so don't use SVN build numbers here!
 // This number appears in the Windows Property Page.
 // This can be specified on a per-assembly basis if desired.
-[assembly: AssemblyFileVersion("0.0.4")]
+[assembly: AssemblyFileVersion("0.0.6")]
 
 // AssemblyInformationalVersion: Identifies the product version.
 // Can contain extra strings (ie. "1.0.0 RC1" or "1.0 (build 12345)").
 // This is the public/marketing version, and should common across all assemblies in the product.
 // This number appears in the Windows Property Page.
-[assembly: AssemblyInformationalVersion("0.0.4")]
+[assembly: AssemblyInformationalVersion("0.0.6")]
 

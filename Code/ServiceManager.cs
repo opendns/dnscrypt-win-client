@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 
 using System.ServiceProcess;
-using System.Text;
 
-using System.Management;
-using System.IO;
 
-class ServiceManager
+public class ServiceManager : IServiceManager
 {
+    const string DNSCRYPT_PROC_NAME = @"dnscrypt-proxy.exe";
+
     string m_sServiceName = "";
     ServiceController m_Controller = null;
     bool m_bIsRunningTcp = false;
@@ -21,7 +19,7 @@ class ServiceManager
 
     ~ServiceManager()
     {
-        if(m_Controller!=null)
+        if (m_Controller != null)
             m_Controller.Close();
     }
 
@@ -58,6 +56,11 @@ class ServiceManager
         }
     }
 
+    public bool IsProxyRunning()
+    {
+        return (ProcessManager.ProcessExists(DNSCRYPT_PROC_NAME) > 0);
+    }
+
     public string StartServiceProcess(bool bIsTCP)
     {
         try
@@ -65,8 +68,8 @@ class ServiceManager
             string[] sCommands = new string[1];
             sCommands[0] = "";
             if (bIsTCP)
-                sCommands[0] = "--tcp-port=443";
-                
+                sCommands[0] = "--tcp-only";
+
             m_Controller.Start(sCommands);
             m_bIsRunningTcp = bIsTCP;
         }

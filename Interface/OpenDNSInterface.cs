@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 
-using System.Threading;
 using System.Diagnostics;
 
-using System.Reflection;
 
 namespace OpenDNSInterface
 {
@@ -35,8 +31,6 @@ namespace OpenDNSInterface
         private bool m_bUseDNSCrypt = false;
         private bool m_bUseDNSCryptTCP = false;
         private bool m_bUseInsecure = false;
-
-        private OVERALL_STATE m_CurrentState = OVERALL_STATE.NONE;
 
         #endregion
 
@@ -189,6 +183,7 @@ namespace OpenDNSInterface
             m_FeedbackPanel = new HTMLPanel(g_HOMEURL + "feedback.php");
             m_Panels.Add(m_FeedbackPanel);
             m_FeedbackPanel.NavCurrent();
+            m_FeedbackPanel.AddDetailsHelper();
 
             SetUpPanels(true, 15, 10);
         }
@@ -332,10 +327,18 @@ namespace OpenDNSInterface
 
                 case TimedEventManager.RUN_STATE.FAIL_CLOSED:
                     sStatusMsg = "Status: Unprotected";
+                    m_StatusPanel.UpdatePanelUI((int)OVERALL_STATUS.BAD, sStatusMsg, "None Available");
+                    SysTrayIcon.Icon = m_ErrorIcon;
+                    SysTrayIcon.Text = sStatusMsg;
+                    break;
+
+                case TimedEventManager.RUN_STATE.DEFAULT:
+                    sStatusMsg = "Status: Unprotected";
                     m_StatusPanel.UpdatePanelUI((int)OVERALL_STATUS.BAD, sStatusMsg, "Default");
                     SysTrayIcon.Icon = m_ErrorIcon;
                     SysTrayIcon.Text = sStatusMsg;
                     break;
+
                 default:
                     sStatusMsg = "Status: No Network";
                     m_StatusPanel.UpdatePanelUI((int)OVERALL_STATUS.BAD, sStatusMsg, "None Available");

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 // Nic access
 using System.Management;
@@ -13,7 +12,6 @@ using Microsoft.Win32;
 // Shell Execute
 using System.Diagnostics;
 
-using System.IO;
 
 // Handles all associated stuff for setting/getting NIC info 
 // and DNS settings

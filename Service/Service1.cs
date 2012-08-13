@@ -1,13 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-
 using System.ServiceProcess;
-using System.Text;
 
-using System.Threading;
 using System.Timers;
 
 namespace OpenDNSCryptService
@@ -16,7 +9,6 @@ namespace OpenDNSCryptService
     {
         public enum START_MODE { USE_NORMAL = 129, USE_TCP = 130 };
         bool m_bStopping = false;
-        string m_sParams = "";
         System.Timers.Timer m_MainTimer = null;
 
         public static string DNSCRYPT_PROC_NAME = @"dnscrypt-proxy.exe";
@@ -58,7 +50,7 @@ namespace OpenDNSCryptService
             if (command == (int)START_MODE.USE_TCP)
             {
                 ProcessManager.KillExistingProcesses(DNSCRYPT_PROC_NAME);
-                Properties.Settings.Default.StartMode = "--tcp-port=443";
+                Properties.Settings.Default.StartMode = "--tcp-only";
                 Properties.Settings.Default.Save();
             }
             else if (command == (int)START_MODE.USE_NORMAL)
@@ -78,7 +70,7 @@ namespace OpenDNSCryptService
             {
                 if (ProcessManager.ProcessExists(DNSCRYPT_PROC_NAME) == 0)
                 {
-                    ProcessManager.LaunchProcess(DNSCRYPT_PROC_NAME, m_sParams);
+                    ProcessManager.LaunchProcess(DNSCRYPT_PROC_NAME, Properties.Settings.Default.StartMode);
                 }
             }
         }

@@ -170,10 +170,10 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>copy $(SolutionDir)\DNSCrypt\dnscrypt-proxy.exe $(TargetDir)</PreBuildEvent>
+    <PreBuildEvent>copy $(ProjectDir)\..\DNSCrypt\dnscrypt-proxy.exe $(TargetDir)</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>if $(ConfigurationName) == Release CALL signtool sign /t http://timestamp.comodoca.com/authenticode /n "OpenDNS" /d "OpenDNS DNSCrypt Installer" "$(ProjectDir)obj\$(PlatformName)\$(ConfigurationName)\$(TargetFileName)"
+    <PostBuildEvent>if $(ConfigurationName) == Release CALL signtool sign /t http://timestamp.comodoca.com/authenticode /n "OpenDNS" /d "OpenDNS DNSCrypt" "$(ProjectDir)obj\$(PlatformName)\$(ConfigurationName)\$(TargetFileName)"
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

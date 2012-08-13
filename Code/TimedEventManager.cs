@@ -1,20 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 using System.Threading;
 
 using System.Net;
 using System.Net.Sockets;
-using System.Net.NetworkInformation;
-
-using System.IO;
 
 using System.Management;
 
-using System.Diagnostics;
-
-using System.Reflection;
 
 // Handles state and all the things that get checked on a timer in the main
 // service code
@@ -22,9 +14,7 @@ public sealed class TimedEventManager
 {
     #region Enums
 
-    public enum RUN_STATE { RESERVED = 0, SERVICE_RUNNING, SERVICE_RESTART, DNSCRYPT_FULL, DNSCRYPT_TCP, OPENDNS_ONLY, FAIL_OPEN, FAIL_CLOSED };
-    public enum PORT_STATE { RESERVED = 0, NONE, PRIMARY, ALTERNATE };
-    public enum NETWORK_STATE { RESERVED = 0, NONE, NON_ODNS, UNKNOWN, NOT_MINE, MINE };
+    public enum RUN_STATE { RESERVED = 0, SERVICE_RUNNING, SERVICE_RESTART, DNSCRYPT_FULL, DNSCRYPT_TCP, OPENDNS_ONLY, FAIL_OPEN, FAIL_CLOSED, DEFAULT };
 
     #endregion
 
@@ -43,7 +33,6 @@ public sealed class TimedEventManager
     //public static string g_sIDIP = "device-id.opendns.com";
     public static string g_sIDIP = "get.a.id.opendns.com";
 
-    public static string DNSCRYPT_PROC_NAME = @"dnscrypt-proxy.exe";
     public static string DNSCRYPT_SVC_NAME = "DNSCrypt";
 
     #endregion
@@ -64,15 +53,11 @@ public sealed class TimedEventManager
     Logging m_Log;
     const string sLogPrefix = "OpenDnsService";
     //string sLogPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-    
-    //PORT_STATE m_LastPortState = PORT_STATE.RESERVED;
-    //NETWORK_STATE m_LastNetworkState = NETWORK_STATE.RESERVED;
 
     // Threads
     Thread m_NICThread = null;
     Thread m_ProxyThread = null;
     Thread m_ServiceThread = null;
-    Thread m_ExceptionThread = null;
 
     #endregion
 
@@ -91,7 +76,7 @@ public sealed class TimedEventManager
 
         public bool m_bShutdown = false;
 
-        public ServiceManager m_ServiceManager = null;
+        public IServiceManager m_ServiceManager = null;
 
         #region User Desired Network State
 
@@ -124,9 +109,9 @@ public sealed class TimedEventManager
 
         #endregion
 
-        public StateManager()
+        public StateManager(IServiceManager serviceManager)
         {
-            m_ServiceManager = new ServiceManager(DNSCRYPT_SVC_NAME);
+            m_ServiceManager = serviceManager;
         }
 
         #region Access Functions
@@ -285,7 +270,7 @@ public sealed class TimedEventManager
 
         #region DNSCrypt Access
 
-        public bool GetDoDNSCrypt() 
+        public bool GetDoDNSCrypt()
         {
             bool bOut = false;
 
@@ -311,7 +296,7 @@ public sealed class TimedEventManager
             return bOut;
         }
 
-        public bool GetDoOpenDNSAvailable()
+        public bool GetDoOpenDNS()
         {
             bool bOut = false;
 
@@ -337,18 +322,22 @@ public sealed class TimedEventManager
     #endregion
 
     public TimedEventManager(int nElapsedTime, Logging Log)
+        : this(nElapsedTime, Log, new ServiceManager(DNSCRYPT_SVC_NAME))
+    { }
+
+    public TimedEventManager(int nElapsedTime, Logging Log, IServiceManager Service)
     {
         m_nTimeToFire = nElapsedTime;
 
         m_Log = Log;
 
         m_Log.Log(Logging.LOGTYPE.DEBUG, "Attempting to create state manager");
-        
+
         // We need a state manager to run
-        m_CurState = new StateManager();
-        
+        m_CurState = new StateManager(Service);
+
         m_Log.Log(Logging.LOGTYPE.DEBUG, "Successfully created state manager");
-        
+
     }
 
     // Called when you want to start handling Events
@@ -356,7 +345,7 @@ public sealed class TimedEventManager
     {
         DelayStart();
 
-        m_CurState.SetRunState(RUN_STATE.FAIL_CLOSED);
+        m_CurState.SetRunState(RUN_STATE.DEFAULT);
 
         // Set up to check state on timed interval
         CreateMainTimer();
@@ -537,21 +526,25 @@ public sealed class TimedEventManager
 
                 if (bUseDNSCrypt && !bUseDNSCryptTCP && bCanUseEncrypted)
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_FULL);
-                else if(bUseDNSCrypt && bUseDNSCryptTCP)
+                else if (bUseDNSCrypt && bUseDNSCryptTCP && bCanUseEncrypted)
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_TCP);
                 else if (!bUseDNSCryptTCP && bUseOpenDNS)
                     m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
 
                 break;
 
             case RUN_STATE.FAIL_CLOSED:
 
-                if (bUseDNSCrypt && !bUseDNSCryptTCP)
+                if (bUseDNSCrypt && !bUseDNSCryptTCP && bCanUseEncrypted)
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_FULL);
-                else if(bUseDNSCrypt && bUseDNSCryptTCP)
+                else if (bUseDNSCrypt && bUseDNSCryptTCP && bCanUseEncrypted)
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_TCP);
                 else if (!bUseDNSCrypt && !bUseDNSCryptTCP && bUseOpenDNS)
                     m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
 
                 break;
 
@@ -563,6 +556,8 @@ public sealed class TimedEventManager
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_FULL);
                 else if (!bUseDNSCrypt && !bUseDNSCryptTCP && bUseOpenDNS && bNICsSet && Where == NICHandler.IP_CHOICES.OPENDNS)
                     m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
 
                 break;
 
@@ -574,28 +569,36 @@ public sealed class TimedEventManager
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_FULL);
                 else if (!bUseDNSCrypt && !bUseDNSCryptTCP && bUseOpenDNS && bNICsSet && Where == NICHandler.IP_CHOICES.OPENDNS)
                     m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
 
                 break;
 
             case RUN_STATE.DNSCRYPT_FULL:
-
-                if (!bUseDNSCrypt && bIsProxyRunning && !bUseOpenDNS)
+                if (bUseDNSCrypt && !bUseDNSCryptTCP && !bCanUseEncrypted && bUseOpenDNS)
                     m_CurState.SetRunState(RUN_STATE.FAIL_OPEN);
-                else if (bUseDNSCrypt && bUseDNSCryptTCP && bIsProxyRunning && bUseOpenDNS)
+                else if (bUseDNSCrypt && !bUseDNSCryptTCP && !bCanUseEncrypted && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.FAIL_CLOSED);
+                else if (bUseDNSCrypt && bUseDNSCryptTCP && bIsProxyRunning)
                     m_CurState.SetRunState(RUN_STATE.SERVICE_RESTART);
                 else if (!bUseDNSCrypt && bUseOpenDNS)
                     m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
-                
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
+
                 break;
 
             case RUN_STATE.DNSCRYPT_TCP:
-
-                if (!bUseDNSCrypt && bIsProxyRunning && !bUseOpenDNS)
+                if (bUseDNSCrypt && bUseDNSCryptTCP && !bCanUseEncrypted && bUseInsecure)
                     m_CurState.SetRunState(RUN_STATE.FAIL_OPEN);
-                else if (bUseDNSCrypt && !bUseDNSCryptTCP && bIsProxyRunning && bUseOpenDNS)
+                else if (bUseDNSCrypt && bUseDNSCryptTCP && !bCanUseEncrypted && !bUseInsecure)
+                    m_CurState.SetRunState(RUN_STATE.FAIL_CLOSED);
+                else if (bUseDNSCrypt && !bUseDNSCryptTCP && bIsProxyRunning)
                     m_CurState.SetRunState(RUN_STATE.SERVICE_RESTART);
                 else if (!bUseDNSCrypt && bUseOpenDNS)
                     m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
 
                 break;
 
@@ -605,10 +608,23 @@ public sealed class TimedEventManager
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_FULL);
                 if (bUseDNSCrypt && bUseDNSCryptTCP && bUseOpenDNS)
                     m_CurState.SetRunState(RUN_STATE.DNSCRYPT_TCP);
-                else if (!bUseDNSCrypt && !bUseOpenDNS && bUseInsecure)
+                else if (bUseDNSCrypt && bUseOpenDNS && bUseInsecure)
                     m_CurState.SetRunState(RUN_STATE.FAIL_OPEN);
-                else if (!bUseDNSCrypt && !bUseOpenDNS && !bUseInsecure)
+                else if (bUseDNSCrypt && !bUseOpenDNS && !bUseInsecure)
                     m_CurState.SetRunState(RUN_STATE.FAIL_CLOSED);
+                else if (!bUseDNSCrypt && !bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DEFAULT);
+
+                break;
+
+            case RUN_STATE.DEFAULT:
+
+                if (bUseDNSCrypt && !bUseDNSCryptTCP && bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DNSCRYPT_FULL);
+                else if (bUseDNSCrypt && bUseDNSCryptTCP && bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.DNSCRYPT_TCP);
+                else if (!bUseDNSCrypt && bUseOpenDNS)
+                    m_CurState.SetRunState(RUN_STATE.OPENDNS_ONLY);
 
                 break;
         }
@@ -625,7 +641,7 @@ public sealed class TimedEventManager
         QueryService();
         QueryNICs();
         QueryNetwork();
-       
+
     }
 
     #endregion
@@ -636,7 +652,7 @@ public sealed class TimedEventManager
     // the user desires if not already in that state
     public void DoCheckServiceRunning(object oIn)
     {
-       StateManager CurState = (StateManager)oIn;
+        StateManager CurState = (StateManager)oIn;
 
         if (CurState.m_bShutdown)
             return;
@@ -655,14 +671,14 @@ public sealed class TimedEventManager
                     CurState.SetProxyRunning(false);
 
                 }
-                else if (ProcessManager.ProcessExists(DNSCRYPT_PROC_NAME) > 0)
+                else if (CurState.m_ServiceManager.IsProxyRunning())
                 {
                     // Everything is ok, the service exists
                     CurState.SetProxyRunning(true);
                 }
 
                 break;
-            
+
             case RUN_STATE.DNSCRYPT_TCP:
 
                 if (!CurState.m_ServiceManager.IsServiceRunningInTcpMode())
@@ -677,11 +693,11 @@ public sealed class TimedEventManager
                         // Already running, restart
                         CurState.m_ServiceManager.RestartServiceProcess(CurState.GetDoDNSCryptTCP());
                     }
-                    
+
                     CurState.SetProxyRunning(false);
 
                 }
-                else if (ProcessManager.ProcessExists(DNSCRYPT_PROC_NAME) > 0)
+                else if (CurState.m_ServiceManager.IsProxyRunning())
                 {
                     // Everything is ok, the service exists
                     CurState.SetProxyRunning(true);
@@ -705,6 +721,10 @@ public sealed class TimedEventManager
                     // Not running, launch one
                     WriteToLog("Starting OpenDNS Service - " + CurState.m_ServiceManager.StartServiceProcess(CurState.GetDoDNSCryptTCP()));
                 }
+                else if (CurState.m_ServiceManager.IsServiceRunningInTcpMode() != CurState.GetDoDNSCryptTCP())
+                {
+                    CurState.m_ServiceManager.RestartServiceProcess(CurState.GetDoDNSCryptTCP());
+                }
 
                 break;
 
@@ -715,6 +735,23 @@ public sealed class TimedEventManager
                 {
                     // Not running, launch one
                     WriteToLog("Starting OpenDNS Service - " + CurState.m_ServiceManager.StartServiceProcess(CurState.GetDoDNSCryptTCP()));
+                }
+                else if (CurState.m_ServiceManager.IsServiceRunningInTcpMode() != CurState.GetDoDNSCryptTCP())
+                {
+                    CurState.m_ServiceManager.RestartServiceProcess(CurState.GetDoDNSCryptTCP());
+                }
+
+                break;
+
+            case RUN_STATE.DEFAULT:
+
+                // All we care about in other states is kill any processes hanging
+                // around if we don't need them
+                if (CurState.m_ServiceManager.IsServiceRunning())
+                {
+                    CurState.m_ServiceManager.KillServiceProcess();
+
+                    CurState.SetProxyRunning(false);
                 }
 
                 break;
@@ -771,8 +808,13 @@ public sealed class TimedEventManager
         }
         else if (Now == RUN_STATE.FAIL_OPEN)
         {
-            // Set the NICs to OpenDNS
-            CurState.SetNICsState(NICHandler.IP_CHOICES.OPENDNS, NICHandler.EnsureNICsState(NICHandler.IP_CHOICES.OPENDNS));
+            // Set the NICs to Default
+            CurState.SetNICsState(NICHandler.IP_CHOICES.DEFAULT, NICHandler.EnsureNICsState(NICHandler.IP_CHOICES.DEFAULT));
+        }
+        else if (Now == RUN_STATE.DEFAULT)
+        {
+            // Set or ensure NICs are original user settings
+            CurState.SetNICsState(NICHandler.IP_CHOICES.DEFAULT, NICHandler.EnsureNICsState(NICHandler.IP_CHOICES.DEFAULT));
         }
         else
         {
@@ -796,7 +838,15 @@ public sealed class TimedEventManager
             byte[] bIDOut = new byte[8];
 
             // First, try a DNS ping through proxy (whether it's on or not)
-            EDNSPacket Packet = SendNetworkPacket(g_sProxyIP, g_sIDIP, 53, 0x10, false, bIDOut);
+            EDNSPacket Packet = SendUdpNetworkPacket(g_sProxyIP, g_sIDIP, 53, 0x10, false, bIDOut);
+
+            DNSPacket.PacketExplode pe = new DNSPacket.PacketExplode(Packet.GetResponsePacket());
+
+            // Retry over TCP if truncated
+            if (pe.IsTruncated())
+            {
+                Packet = SendTcpNetworkPacket(g_sProxyIP, g_sIDIP, 53, 0x10, false, bIDOut);
+            }
 
             if (Packet.GetResponsePacket().Length > 0)
             {
@@ -810,7 +860,7 @@ public sealed class TimedEventManager
                 CurState.SetEncryptedState(false);
 
                 // Try a second DNS ping, this time through the OpenDNS resolver
-                Packet = SendNetworkPacket(g_sResolverIP, g_sIDIP, 53, 0x10, false, bIDOut);
+                Packet = SendUdpNetworkPacket(g_sResolverIP, g_sIDIP, 53, 0x10, false, bIDOut);
                 if (Packet.GetResponsePacket().Length > 0)
                 {
                     // We have at least SOME internet connection
@@ -822,7 +872,7 @@ public sealed class TimedEventManager
                     CurState.SetNetworkState(false, true);
                 }
             }
-            
+
         }
         catch (Exception Ex)
         {
@@ -895,7 +945,7 @@ public sealed class TimedEventManager
     #endregion
 
     // Actually builds, sends, sets the received bytes and returns the whole packet
-    private EDNSPacket SendNetworkPacket(string sDNSIP, string sIPToResolve, int nPort, byte bType, bool bEDNS, byte[] bMachine_ID)
+    private EDNSPacket SendUdpNetworkPacket(string sDNSIP, string sIPToResolve, int nPort, byte bType, bool bEDNS, byte[] bMachine_ID)
     {
         // Create empty EDNS packet
         EDNSPacket Packet = new EDNSPacket();
@@ -946,11 +996,69 @@ public sealed class TimedEventManager
                 else
                     Packet.SetReceivePacket(udpGo.EndReceive(iarResult, ref RemoteIpEndPoint));
             }
-
         }
         catch (Exception Ex)
         {
             // TODO: Log an exception?
+        }
+
+        // Always just return packet
+        return Packet;
+    }
+
+    // Actually builds, sends, sets the received bytes and returns the whole packet
+    private EDNSPacket SendTcpNetworkPacket(string sDNSIP, string sIPToResolve, int nPort, byte bType, bool bEDNS, byte[] bMachine_ID)
+    {
+        // Create empty EDNS packet
+        EDNSPacket Packet = new EDNSPacket();
+
+        try
+        {
+            // Send the current machine_id host
+            if (bEDNS)
+                Packet.CreateEDNSPacketMachineID(sIPToResolve, bType, bMachine_ID);
+            else
+                Packet.CreateDNSPacket(sIPToResolve, bType);
+
+            if (Packet.GetPacketLen() > 0)
+            {
+                // Create a tcp client to send the packet
+                TcpClient tcpGo = new TcpClient(sDNSIP, nPort);
+                NetworkStream tcpStream = tcpGo.GetStream();
+                byte[] packetBytes = Packet.GetPacket();
+
+                // Get length bytes in network byte order
+                byte[] lengthBytes = BitConverter.GetBytes((short)packetBytes.Length);
+                if (BitConverter.IsLittleEndian) Array.Reverse(lengthBytes);
+
+                // Prepend the length to the existing data; TCP DNS seems to require this
+                byte[] sendBytes = new byte[packetBytes.Length + 2];
+                Buffer.BlockCopy(lengthBytes, 0, sendBytes, 0, lengthBytes.Length);
+                Buffer.BlockCopy(packetBytes, 0, sendBytes, 2, packetBytes.Length);
+
+                tcpStream.Write(sendBytes, 0, sendBytes .Length);
+
+                // Get the response synchronously (hopefully smaller than 2048)
+                byte[] receiveBuffer = new byte[2048];
+
+                int bytesRead = tcpStream.Read(packetBytes, 0, packetBytes.Length);
+                if (bytesRead > 0)
+                {
+                    // Trim off that extra length before returning the packet
+                    byte[] buffTrimmed = new byte[bytesRead - 2];
+                    Buffer.BlockCopy(receiveBuffer, 2, buffTrimmed, 0, bytesRead - 2);
+
+                    Packet.SetReceivePacket(buffTrimmed);
+                }
+
+                tcpStream.Close();
+                tcpGo.Close();
+            }
+        }
+        catch (Exception Ex)
+        {
+            // TODO: Log an exception?
+            m_Log.Log(Logging.LOGTYPE.DEBUG, "SendTcpNetworkPacket EXCEPTION: " + Ex.Message);
         }
 
         // Always just return packet

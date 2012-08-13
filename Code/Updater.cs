@@ -4,7 +4,6 @@ using System.IO;
 using System.Collections;
 using System.Diagnostics;
 
-using System.Reflection;
 
 public class Updater
 {
