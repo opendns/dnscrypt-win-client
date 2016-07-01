@@ -1,6 +1,8 @@
 dnscrypt-win-client is covered by the following license :
 
 /*
+ * ISC License
+ * 
  * Copyright (c) 2011-2012 OpenDNS, Inc.
  *
  * Permission to use, copy, modify, and distribute this software for any
